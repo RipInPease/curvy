@@ -1,0 +1,3 @@
+[workspace]
+members = ["curvy", "curvy_core", "curvy_wav"]
+

@@ -1,14 +1,21 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+use std::time::Duration;
+
+pub trait AudioStream {
+    fn update(&mut self);
+
+    fn play(&mut self);
+    fn pause(&mut self);
+    fn is_playing(&self);
+
+    fn ffw(&mut self, time: Duration);
+    fn rew(&mut self, time: Duration);
+    fn set_playback_rate(&mut self, rate: f64);
+    fn playback_rate(&self);
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+#[derive(Debug)]
+pub enum Sample {
+    PCM(u32),
+    IEEE(f64),
 }

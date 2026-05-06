@@ -1,1 +1,1 @@
-Using raylib to listen to varies auto files
+Using raylib to listen to various audio files

@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+pub mod utils;
+
 pub trait AudioStream {
     fn update(&mut self);
 

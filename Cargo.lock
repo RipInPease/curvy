@@ -3,13 +3,20 @@
 version = 4
 
 [[package]]
-name = "curvy"
-version = "0.1.0"
-
-[[package]]
 name = "curvy_core"
 version = "0.1.0"
 
 [[package]]
+name = "curvy_player"
+version = "0.1.0"
+dependencies = [
+ "curvy_core",
+ "curvy_wav",
+]
+
+[[package]]
 name = "curvy_wav"
 version = "0.1.0"
+dependencies = [
+ "curvy_core",
+]

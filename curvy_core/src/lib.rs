@@ -14,10 +14,15 @@ pub trait AudioStream {
     fn set_playback_rate(&mut self, rate: f64);
     fn playback_rate(&self) -> f64;
 
+    fn sample_rate(&self) -> u32;
+    fn sample_size(&self) -> u32;
+
+    /// Return None if there is no more audio, or the stream is paused
     fn sample(&mut self) -> Option<AudioSample>;
 }
 
 
+#[derive(Debug)]
 pub enum AudioSample {
     PCM8(u8),
     PCM16(i16),

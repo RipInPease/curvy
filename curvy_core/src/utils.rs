@@ -21,6 +21,12 @@ int_from_be_slice!(u16, u16_from_be_slice, u16_from_le_slice);
 int_from_be_slice!(u32, u32_from_be_slice, u32_from_le_slice);
 int_from_be_slice!(u64, u64_from_be_slice, u64_from_le_slice);
 int_from_be_slice!(u128, u128_from_be_slice, u128_from_le_slice);
+int_from_be_slice!(i16, i16_from_be_slice, i16_from_le_slice);
+int_from_be_slice!(i32, i32_from_be_slice, i32_from_le_slice);
+int_from_be_slice!(i64, i64_from_be_slice, i64_from_le_slice);
+int_from_be_slice!(i128, i128_from_be_slice, i128_from_le_slice);
+int_from_be_slice!(f32, f32_from_be_slice, f32_from_le_slice);
+int_from_be_slice!(f64, f64_from_be_slice, f64_from_le_slice);
 
 #[inline]
 pub fn invalid_format_error() -> io::Error {

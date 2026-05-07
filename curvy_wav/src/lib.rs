@@ -1,5 +1,6 @@
 use std::io::{self, BufRead, BufReader, Read};
 use std::fs::File;
+use std::num::NonZero;
 use std::path::Path;
 
 use curvy_core::{AudioStream, AudioSample};
@@ -77,6 +78,10 @@ impl WavStream<BufReader<File>> {
         let bytes_sec = utils::u32_from_le_slice(&buf, 12);
         let bytes_block = utils::u16_from_le_slice(&buf, 16);
         let bits_sample = utils::u16_from_le_slice(&buf, 18);
+        if bits_sample % 8 != 0 {
+            let kind = io::ErrorKind::InvalidData;
+            return Err(io::Error::new(kind, "Unsupported format. Very fucked up bits per sample"));
+        }
 
         Ok(Self { 
             source,
@@ -147,7 +152,53 @@ impl<R: Read> AudioStream for WavStream<R> {
         self.playback_rate
     }
 
+    fn sample_rate(&self) -> u32 {
+        self.sample_rate
+    }
+
+    fn sample_size(&self) -> u32 {
+        self.bits_sample as u32
+    }
+
     fn sample(&mut self) -> Option<AudioSample> {
-        None
+        if !self.is_playing {
+            return None
+        }
+
+        // Start of a new data chunk
+        if self.bytes_left_chunk == 0 {
+            let mut buf = [0; 8];
+            if self.source.read_exact(&mut buf).is_err() {
+                return None
+            }
+
+            if &buf[0..4] != b"data" { return None }
+            self.bytes_left_chunk = utils::u32_from_be_slice(&buf,4);
+        }
+
+        // Read the sample for all channels
+        let mut buf = vec![0; self.bytes_block as usize];
+        if self.source.read_exact(&mut buf).is_err() {
+            return None
+        }
+
+        let sample = match self.audio_format {
+            AudioFormat::PCM => {
+                match self.bits_sample {
+                    8 => AudioSample::PCM8(buf[0]),
+                    16 => AudioSample::PCM16(utils::i16_from_le_slice(&buf, 0)),
+                    _  => return None
+                }
+            }
+
+            AudioFormat::IEEE => {
+                match self.bits_sample {
+                    32 => AudioSample::IEEE32(utils::f32_from_le_slice(&buf, 0)),
+                    _  => return None
+                }
+            }
+        };
+
+        Some(sample)
     }
 }

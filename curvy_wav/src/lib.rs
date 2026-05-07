@@ -2,7 +2,7 @@ use std::io::{self, BufRead, BufReader, Read};
 use std::fs::File;
 use std::path::Path;
 
-use curvy_core::AudioStream;
+use curvy_core::{AudioStream, AudioSample};
 use curvy_core::utils;
 
 
@@ -21,8 +21,8 @@ pub struct WavStream<R: Read> {
     bytes_block: u16,
     bits_sample: u16,
 
-    // The amount of bytes left in the current block
-
+    // The amount of bytes left in the current block of data
+    bytes_left_chunk: u32,
 }
 
 
@@ -88,7 +88,8 @@ impl WavStream<BufReader<File>> {
             sample_rate,
             bytes_sec,
             bytes_block,
-            bits_sample
+            bits_sample,
+            bytes_left_chunk: 0
         })
     }
 }
@@ -109,5 +110,44 @@ impl TryFrom<u16> for AudioFormat {
             3   =>  Ok(Self::IEEE),
             _   =>  Err(())
         }
+    }
+}
+
+
+impl<R: Read> AudioStream for WavStream<R> {
+    fn update(&mut self) {
+        
+    }
+
+    fn play(&mut self) {
+        self.is_playing = true
+    }
+
+    fn pause(&mut self) {
+        self.is_playing = false
+    }
+
+    fn is_playing(&self) -> bool {
+        self.is_playing
+    }
+
+    fn ffw(&mut self, time: std::time::Duration) {
+        
+    }
+
+    fn rew(&mut self, time: std::time::Duration) {
+        
+    }
+
+    fn set_playback_rate(&mut self, rate: f64) {
+        self.playback_rate = rate
+    }
+
+    fn playback_rate(&self) -> f64 {
+        self.playback_rate
+    }
+
+    fn sample(&mut self) -> Option<AudioSample> {
+        None
     }
 }

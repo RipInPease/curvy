@@ -7,17 +7,19 @@ pub trait AudioStream {
 
     fn play(&mut self);
     fn pause(&mut self);
-    fn is_playing(&self);
+    fn is_playing(&self) -> bool;
 
     fn ffw(&mut self, time: Duration);
     fn rew(&mut self, time: Duration);
     fn set_playback_rate(&mut self, rate: f64);
-    fn playback_rate(&self);
+    fn playback_rate(&self) -> f64;
+
+    fn sample(&mut self) -> Option<AudioSample>;
 }
 
 
-#[derive(Debug)]
-pub enum Sample {
-    PCM(u32),
-    IEEE(f64),
+pub enum AudioSample {
+    PCM8(u8),
+    PCM16(i16),
+    IEEE32(f32)
 }

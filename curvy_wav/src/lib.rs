@@ -160,6 +160,10 @@ impl<R: Read> AudioStream for WavStream<R> {
         self.bits_sample as u32
     }
 
+    fn num_chs(&self) -> u8 {
+        self.nbr_ch as u8
+    }
+
     fn sample(&mut self) -> Option<AudioSample> {
         if !self.is_playing {
             return None
@@ -173,7 +177,7 @@ impl<R: Read> AudioStream for WavStream<R> {
             }
 
             if &buf[0..4] != b"data" { return None }
-            self.bytes_left_chunk = utils::u32_from_be_slice(&buf,4);
+            self.bytes_left_chunk = utils::u32_from_le_slice(&buf,4);
         }
 
         // Read the sample for all channels
@@ -181,6 +185,8 @@ impl<R: Read> AudioStream for WavStream<R> {
         if self.source.read_exact(&mut buf).is_err() {
             return None
         }
+        self.bytes_left_chunk -= self.bytes_block as u32;
+
 
         let sample = match self.audio_format {
             AudioFormat::PCM => {

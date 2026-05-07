@@ -16,6 +16,7 @@ pub trait AudioStream {
 
     fn sample_rate(&self) -> u32;
     fn sample_size(&self) -> u32;
+    fn num_chs(&self) -> u8;
 
     /// Return None if there is no more audio, or the stream is paused
     fn sample(&mut self) -> Option<AudioSample>;

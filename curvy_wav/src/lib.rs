@@ -1,6 +1,5 @@
-use std::io::{self, BufRead, BufReader, Read};
+use std::io::{self, BufReader, Read};
 use std::fs::File;
-use std::num::NonZero;
 use std::path::Path;
 
 use curvy_core::{AudioStream, AudioSample, AudioFrame};
@@ -11,14 +10,11 @@ use curvy_core::utils;
 pub struct WavStream<R: Read> {
     source: R,
     is_playing: bool,
-    playback_rate: f64,
 
     // Data format
-    //block_size: u32,
     audio_format: AudioFormat,
     nbr_ch: u16,
     sample_rate: u32,
-    bytes_sec: u32,
     bytes_block: u16,
     bits_sample: u16,
 
@@ -75,7 +71,6 @@ impl WavStream<BufReader<File>> {
             };
         let nbr_ch = utils::u16_from_le_slice(&buf, 6);
         let sample_rate = utils::u32_from_le_slice(&buf, 8);
-        let bytes_sec = utils::u32_from_le_slice(&buf, 12);
         let bytes_block = utils::u16_from_le_slice(&buf, 16);
         let bits_sample = utils::u16_from_le_slice(&buf, 18);
         if bits_sample % 8 != 0 {
@@ -86,12 +81,9 @@ impl WavStream<BufReader<File>> {
         Ok(Self { 
             source,
             is_playing: true,
-            playback_rate: 1.0,
-            //block_size,
             audio_format,
             nbr_ch,
             sample_rate,
-            bytes_sec,
             bytes_block,
             bits_sample,
             bytes_left_chunk: 0

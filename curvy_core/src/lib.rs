@@ -31,6 +31,15 @@ impl AudioFrame {
             samples
         }
     }
+
+
+    /// An Iterator over all [`AudioSample`]
+    pub fn samples(&self) -> Samples<'_> {
+        Samples { 
+            frame: self, 
+            i: 0, max_i: self.samples.len() 
+        }
+    }
 }
 
 

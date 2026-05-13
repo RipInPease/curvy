@@ -85,7 +85,7 @@ impl WavStream<BufReader<File>> {
 
         Ok(Self { 
             source,
-            is_playing: false,
+            is_playing: true,
             playback_rate: 1.0,
             //block_size,
             audio_format,
@@ -115,9 +115,10 @@ impl<R: Read> WavStream<R> {
 
     /// Reads an audio frame from a slice of bytes
     fn get_frame(&self, data: &[u8]) -> AudioFrame {
-        let num_samples = ((self.bits_sample / 8) * self.nbr_ch) as usize;
+        let num_samples = self.nbr_ch as usize;
         let mut samples: Vec<AudioSample> = Vec::with_capacity(num_samples as usize);
 
+        //println!("Num samples: {}", num_samples);
         for i in 0..num_samples {
             match self.audio_format {
                 AudioFormat::IEEE => {
@@ -125,7 +126,9 @@ impl<R: Read> WavStream<R> {
                     samples.push(AudioSample::IEEE32(sample_val));
                 },
                 AudioFormat::PCM => {
+                    //println!("Here1");
                     let sample_val = utils::i16_from_le_slice(data, i * size_of::<i16>());
+                    //println!("Here2");
                     samples.push(AudioSample::PCM16(sample_val));
                 }
             }

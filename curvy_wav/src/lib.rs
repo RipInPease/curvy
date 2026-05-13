@@ -3,7 +3,7 @@ use std::fs::File;
 use std::num::NonZero;
 use std::path::Path;
 
-use curvy_core::{AudioStream, AudioSample};
+use curvy_core::{AudioStream, AudioSample, AudioFrame};
 use curvy_core::utils;
 
 
@@ -100,6 +100,41 @@ impl WavStream<BufReader<File>> {
 }
 
 
+impl<R: Read> WavStream<R> {
+    /// Returns an AudioSample with the value of zero
+    pub fn zero(&self) -> AudioFrame {
+        let sample = match self.audio_format {
+            AudioFormat::PCM => AudioSample::PCM16(0),
+            AudioFormat::IEEE => AudioSample::IEEE32(0.0),
+        };
+
+        let samples = vec![sample; self.num_chs() as usize].into_boxed_slice();
+        AudioFrame::new(samples)
+    }
+
+
+    /// Reads an audio frame from a slice of bytes
+    fn get_frame(&self, data: &[u8]) -> AudioFrame {
+        let num_samples = ((self.bits_sample / 8) * self.nbr_ch) as usize;
+        let mut samples: Vec<AudioSample> = Vec::with_capacity(num_samples as usize);
+
+        for i in 0..num_samples {
+            match self.audio_format {
+                AudioFormat::IEEE => {
+                    let sample_val = utils::f32_from_le_slice(data, i * size_of::<f32>());
+                    samples.push(AudioSample::IEEE32(sample_val));
+                },
+                AudioFormat::PCM => {
+                    let sample_val = utils::i16_from_le_slice(data, i * size_of::<i16>());
+                    samples.push(AudioSample::PCM16(sample_val));
+                }
+            }
+        }
+
+        AudioFrame::new(samples.into_boxed_slice())
+    }
+}
+
 #[derive(Debug)]
 enum AudioFormat {
     PCM,
@@ -120,38 +155,6 @@ impl TryFrom<u16> for AudioFormat {
 
 
 impl<R: Read> AudioStream for WavStream<R> {
-    fn update(&mut self) {
-        
-    }
-
-    fn play(&mut self) {
-        self.is_playing = true
-    }
-
-    fn pause(&mut self) {
-        self.is_playing = false
-    }
-
-    fn is_playing(&self) -> bool {
-        self.is_playing
-    }
-
-    fn ffw(&mut self, time: std::time::Duration) {
-        
-    }
-
-    fn rew(&mut self, time: std::time::Duration) {
-        
-    }
-
-    fn set_playback_rate(&mut self, rate: f64) {
-        self.playback_rate = rate
-    }
-
-    fn playback_rate(&self) -> f64 {
-        self.playback_rate
-    }
-
     fn sample_rate(&self) -> u32 {
         self.sample_rate
     }
@@ -164,9 +167,9 @@ impl<R: Read> AudioStream for WavStream<R> {
         self.nbr_ch as u8
     }
 
-    fn sample(&mut self) -> Option<AudioSample> {
+    fn frame(&mut self) -> Option<AudioFrame> {
         if !self.is_playing {
-            return None
+            return Some(self.zero())
         }
 
         // Start of a new data chunk
@@ -180,31 +183,14 @@ impl<R: Read> AudioStream for WavStream<R> {
             self.bytes_left_chunk = utils::u32_from_le_slice(&buf,4);
         }
 
-        // Read the sample for all channels
+        // Read the next frame
         let mut buf = vec![0; self.bytes_block as usize];
         if self.source.read_exact(&mut buf).is_err() {
             return None
         }
         self.bytes_left_chunk -= self.bytes_block as u32;
+        let frame = self.get_frame(&buf);
 
-
-        let sample = match self.audio_format {
-            AudioFormat::PCM => {
-                match self.bits_sample {
-                    8 => AudioSample::PCM8(buf[0]),
-                    16 => AudioSample::PCM16(utils::i16_from_le_slice(&buf, 0)),
-                    _  => return None
-                }
-            }
-
-            AudioFormat::IEEE => {
-                match self.bits_sample {
-                    32 => AudioSample::IEEE32(utils::f32_from_le_slice(&buf, 0)),
-                    _  => return None
-                }
-            }
-        };
-
-        Some(sample)
+        Some(frame)
     }
 }

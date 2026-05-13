@@ -11,7 +11,7 @@ const AMP: f64 = 0.2; // volume (0.0–1.0)
 fn main() {
     let ray_audio = RaylibAudio::init_audio_device().unwrap();
     ray_audio.set_audio_stream_buffer_size_default(BUFFER_SIZE);
-    let mut stream = ray_audio.new_audio_stream(SAMPLE_RATE, 16, 1);
+    let stream = ray_audio.new_audio_stream(SAMPLE_RATE, 16, 1);
     stream.play();
     let stream = unsafe { stream.inner() };
 

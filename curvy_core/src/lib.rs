@@ -1,31 +1,57 @@
-use std::time::Duration;
-
 pub mod utils;
 
 pub trait AudioStream {
-    fn update(&mut self);
-
-    fn play(&mut self);
-    fn pause(&mut self);
-    fn is_playing(&self) -> bool;
-
-    fn ffw(&mut self, time: Duration);
-    fn rew(&mut self, time: Duration);
-    fn set_playback_rate(&mut self, rate: f64);
-    fn playback_rate(&self) -> f64;
-
     fn sample_rate(&self) -> u32;
     fn sample_size(&self) -> u32;
     fn num_chs(&self) -> u8;
 
-    /// Return None if there is no more audio, or the stream is paused
-    fn sample(&mut self) -> Option<AudioSample>;
+    /// Return None if there is no more audio
+    fn frame(&mut self) -> Option<AudioFrame>;
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum AudioSample {
     PCM8(u8),
     PCM16(i16),
     IEEE32(f32)
+}
+
+
+/// Contains one sample for every channel
+#[derive(Debug, Clone)]
+pub struct AudioFrame {
+    samples: Box<[AudioSample]>
+}
+
+
+impl AudioFrame {
+    pub fn new(samples: Box<[AudioSample]>) -> Self {
+        Self {
+            samples
+        }
+    }
+}
+
+
+/// An iterator over all samples in an [`AudioFrame`]
+pub struct Samples<'a> {
+    frame: &'a AudioFrame,
+    i: usize,
+    max_i: usize
+}
+
+
+impl<'a> Iterator for Samples<'a> {
+    type Item = &'a AudioSample;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.i >= self.max_i {
+            None
+        } else {
+            let res = &self.frame.samples[self.i];
+            self.i += 1;
+            Some(res)
+        }
+    }
 }

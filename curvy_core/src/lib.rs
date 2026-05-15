@@ -7,6 +7,9 @@ pub trait AudioStream {
 
     /// Return None if there is no more audio
     fn frame(&mut self) -> Option<AudioFrame>;
+
+    /// Gives a frame with a value of zero
+    fn zeroed_frame(&self) -> AudioFrame;
 }
 
 

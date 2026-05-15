@@ -93,18 +93,6 @@ impl WavStream<BufReader<File>> {
 
 
 impl<R: Read> WavStream<R> {
-    /// Returns an AudioSample with the value of zero
-    pub fn zero(&self) -> AudioFrame {
-        let sample = match self.audio_format {
-            AudioFormat::PCM => AudioSample::PCM16(0),
-            AudioFormat::IEEE => AudioSample::IEEE32(0.0),
-        };
-
-        let samples = vec![sample; self.num_chs() as usize].into_boxed_slice();
-        AudioFrame::new(samples)
-    }
-
-
     /// Reads an audio frame from a slice of bytes
     fn get_frame(&self, data: &[u8]) -> AudioFrame {
         let num_samples = self.nbr_ch as usize;
@@ -162,9 +150,19 @@ impl<R: Read> AudioStream for WavStream<R> {
         self.nbr_ch as u8
     }
 
+    fn zeroed_frame(&self) -> AudioFrame {
+        let sample = match self.audio_format {
+            AudioFormat::PCM => AudioSample::PCM16(0),
+            AudioFormat::IEEE => AudioSample::IEEE32(0.0),
+        };
+
+        let samples = vec![sample; self.num_chs() as usize].into_boxed_slice();
+        AudioFrame::new(samples)
+    }
+
     fn frame(&mut self) -> Option<AudioFrame> {
         if !self.is_playing {
-            return Some(self.zero())
+            return Some(self.zeroed_frame())
         }
 
         // Start of a new data chunk

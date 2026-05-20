@@ -1,9 +1,7 @@
-use std::env;
-use std::io::Read;
+use std::io::{Read, BufReader};
+use std::fs;
 
-use raylib::core::audio::RaylibAudio;
-use raylib::ffi::IsAudioStreamProcessed;
-use raylib::ffi::UpdateAudioStream;
+use sdl3::audio::{AudioFormat as SdlAudioFormat, AudioSpec, AudioStream as SdlAudioStream};
 
 use curvy_core::*;
 use curvy_wav::WavStream;
@@ -47,82 +45,49 @@ impl<R: Read> AudioStream for AudioFormat<R> {
     }
 }
 
+
 fn main() {
+    let mut audio_format = match open_audio() {
+        Some(v) => v,
+        None    => return
+    };
+
+    
+    let sdl_context = sdl3::init().expect("Failed to init SDL3");
+    let audio_system = sdl_context.audio().expect("Failed to create audio system using SDL3");
+    
+}
+
+
+fn open_audio() -> Option<AudioFormat<BufReader<fs::File>>> {
+    use std::env;
     let mut args = env::args();
     args.next();
     let path_to_file = match args.next() {
         Some(path)  => path,
         None        => {
             println!("Please enter a file to listen to");
-            return;
+            return None;
         }
     };
 
 
     let file_extension: String = path_to_file
         .chars()
-        .skip_while(|c| *c != '.')
-        //.take_while(|c| *c != '.')
-        .collect();
+        .rev()
+        .take_while(|b| *b != '.')
+        .collect::<String>()
+        .chars().rev().collect();
    
-    let mut audio_format = match &file_extension[..] {
-        ".wav" => AudioFormat::Wav(
+    let audio_format = match &file_extension[..] {
+        "wav" => AudioFormat::Wav(
             WavStream::from_file(&path_to_file).expect("Wrong wav format")
         ),
         _ => {
-            println!("Unknown file format {}", file_extension);
-            return;
+            println!("Unknown file format .{}", file_extension);
+            return None;
         }
     };
 
-    let ray_audio = RaylibAudio::init_audio_device().unwrap();
-    ray_audio.set_audio_stream_buffer_size_default(BUFFER_SIZE);
-    let stream = ray_audio.new_audio_stream(
-        audio_format.sample_rate(), 
-        audio_format.sample_size(), 
-        audio_format.num_chs() as u32
-    );
-    stream.play();
-    
-    let stream = unsafe { stream.inner() };
-    let mut buf: Vec<i16> = vec![0; BUFFER_SIZE as usize * audio_format.num_chs() as usize];
-
-    let mut finished = false;
-    loop {
-        let is_processed = unsafe {
-            IsAudioStreamProcessed(stream)
-        };
-        if is_processed {
-            if finished {
-                break;
-            }
-
-            let mut i = 0;
-            while i < buf.len() {
-                let frame = match audio_format.frame() {
-                    Some(v) => v,
-                    None => {
-                        finished = true;
-                        audio_format.zeroed_frame()
-                    }
-                };
-
-                for sample in frame.samples() {
-                    if let AudioSample::PCM16(val) = sample {
-                        buf[i] = *val;
-                    }
-
-                    i += 1;
-                }
-            }
-
-            unsafe {
-                UpdateAudioStream(
-                    stream, 
-                    buf.as_ptr() as *const std::os::raw::c_void, 
-                    BUFFER_SIZE
-                );
-            }
-        }
-    }
+    Some(audio_format)
 }

@@ -6,4 +6,4 @@ edition = "2024"
 [dependencies]
 curvy_core  = { path = "../curvy_core" }
 curvy_wav   = { path = "../curvy_wav" }
-raylib = "5.5.1"
+sdl3 = "0.18.4"

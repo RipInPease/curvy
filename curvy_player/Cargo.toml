@@ -7,3 +7,4 @@ edition = "2024"
 curvy_core  = { path = "../curvy_core" }
 curvy_wav   = { path = "../curvy_wav" }
 cpal = "0.17.3"
+gtk4 = "0.11.3"

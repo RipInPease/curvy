@@ -5,6 +5,7 @@ use cpal::traits::{HostTrait, DeviceTrait, StreamTrait};
 
 use curvy_core::*;
 use curvy_wav::WavStream;
+use gtk4::glib;
 
 
 enum AudioFormat<R: Read> {
@@ -45,6 +46,7 @@ impl<R: Read> AudioStream for AudioFormat<R> {
 
 
 fn main() {
+    let code = open_window();
     let mut audio_format = match open_audio_file() {
         Some(v) => v,
         None    => return
@@ -69,9 +71,10 @@ fn main() {
         }
     };
 
-    let stream = device.build_output_stream(
+    let stream = device.build_output_stream_raw (
         &config, 
-        move |data: &mut [i16], info: &cpal::OutputCallbackInfo| {
+        sample_format,
+        move |data: &mut cpal::Data, info: &cpal::OutputCallbackInfo| {
             // react to stream events and read or write stream data here.
             update_audio_buffer(data, info, &mut audio_format);
         },
@@ -120,20 +123,35 @@ fn open_audio_file() -> Option<AudioFormat<BufReader<fs::File>>> {
 }
 
 
-fn update_audio_buffer<S>(data: &mut [i16], _: &cpal::OutputCallbackInfo, audio_stream: &mut S) 
+fn update_audio_buffer<S>(data: &mut cpal::Data, _: &cpal::OutputCallbackInfo, audio_stream: &mut S) 
 where
     S: AudioStream,
 {
+    let data = data.bytes_mut();
     let mut i = 0;
     let i_max = data.len();
 
     while i < i_max && let Some(frame) = audio_stream.frame() {
         for sample in frame.samples() {
             if let AudioSample::PCM16(val) = sample {
-                data[i] = *val;
-                //println!("sample: {}", val);
+                for byte in val.to_le_bytes() {
+                    data[i] = byte;
+                    i += 1;
+                }
             }
-            i += 1;
         }
     }
+}
+
+
+fn open_window() -> glib::ExitCode {
+    use gtk4 as gtk;
+    use gtk::prelude::*;
+    use gtk::{glib, Application, ApplicationWindow, Button};
+
+    let application = Application::builder()
+        .application_id("curvy")
+        .build();
+
+    application.run()
 }
